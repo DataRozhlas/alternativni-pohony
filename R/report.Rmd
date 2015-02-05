@@ -1,0 +1,90 @@
+---
+title: "Cena pohonných hmot a nově registrovaná auta podle typu paliva"
+author: "petr.koci@samizdat.cz"
+date: "5. února 2015"
+output: html_document
+---
+
+## Jak se vyvíjela cena benzinu a nafty
+Český statistický úřad má ceny paliv k dispozici [až roku 2009](http://www.czso.cz/csu/csu.nsf/kalendar/aktual-tdb). Dostatečně dlouhou časovou řadu jsme [našli u CCS](http://www.ccs.cz/pages/phm2.php), která ovšem nesleduje ceny LPG ani dalších alternativních paliv. Pokud byste věděli o zdroji takových dat, můžeme je doplnit.
+
+```{r fig.width = 10, fig.height = 4, echo = F, message = F, warning= F}
+library("ggplot2")
+library("dplyr")
+library("XML")
+library("tidyr")
+
+ccs <- readHTMLTable("../data/ccs.html")[[1]]
+ccs <- ccs[ , c(1, 2, 4)]
+ccs$Datum <- as.Date(as.character(ccs$Datum), format="%d.%m.%Y")
+names(ccs) <- c("datum", "benzin", "diesel")
+ccs$benzin <- as.numeric(as.character(ccs$benzin))
+ccs$diesel <- as.numeric(as.character(ccs$diesel))
+
+
+ccs <- ccs %>%
+        gather(palivo, cena, benzin:diesel)
+
+ggplot(ccs, aes(x=datum, y=cena)) + geom_line(aes(colour=palivo)) + xlab(label = "") + ylab(label = "cena v korunách za litr") + ggtitle("Průměrná cena pohonných hmot (zdroj: CCS)") + scale_colour_brewer(type="qual", palette = 6)
+```
+
+## Nově registrovaná auta podle pohonu
+
+Údaje o nově registrovaných osobních autech máme od [Svazu dovozců automobilů](http://portal.sda-cia.cz/stat.php?n#str=nova). Zahrnují i tuzemské výrobce a jiné nečleny, měly by odrážet celkovou situaci na trhu.
+
+Výrazný je nástup dieselů v roce 2009, který koresponduje se začátkem dlouhodobého zdražování pohonných hmot, benzinu i nafty. Sezónní výkyvy v prodejích jsou nejspíš známá věc: nejvíc nových aut se prodává na jaře a před koncem roku, nejméně v lednu.
+
+```{r fig.width = 10, fig.height = 4, echo = F, message = F, warning= F}
+vozidla <- read.csv("../data/registrovana-vozidla.csv")
+vozidla <- vozidla %>%
+        mutate(datum = as.Date(paste(rok, mesic, "15", sep="-"))) %>%
+        select(datum, benzin, diesel, cng, lpg, e85, elektro, hybrid, ostatní)
+vozidla <- vozidla %>%
+        gather(palivo, prodano, benzin:ostatní)
+ggplot(vozidla, aes(x=datum, y=prodano)) + geom_line(aes(colour=palivo)) + xlab(label = "") + ylab(label = "prodaných kusů") + ggtitle("Nově registrovaná auta podle paliva (zdroj: SDA)") + scale_colour_brewer(type="qual", palette = 6)
+```
+
+## Rozdělení trhu s novými auty
+
+Diesely se dotáhly na benzinová auta, ale jak je vidět z předchozího grafu, v měsíčních prodejích je ještě nikdy nepřekonaly. Alternativní pohony tvoří méně než pět procent trhu. Nevíme, jaké pohony se skrývají v kategorii "ostatní", která za posledních osm let výrazně ztrácí.
+
+```{r fig.width = 10, fig.height = 8, echo = F, message = F, warning= F}
+trh <- read.csv("../data/registrovana-vozidla.csv")
+trh <- trh %>%
+        mutate(datum = as.Date(paste(rok, mesic, "15", sep="-"))) %>%
+        select(datum, benzin, diesel, cng, lpg, e85, elektro, hybrid, ostatní)
+
+trh[is.na(as.matrix(trh))] <- 0
+
+options(scipen = 999)
+
+trh <- trh %>%
+        mutate(celkem = benzin + diesel + cng + lpg + e85 + elektro + hybrid + ostatní) %>%
+        mutate(benzin = benzin / celkem * 100) %>%
+        mutate(diesel = diesel / celkem * 100) %>%
+        mutate(cng = cng / celkem * 100) %>%
+        mutate(lpg = lpg / celkem * 100) %>%
+        mutate(e85 = e85 / celkem * 100) %>%
+        mutate(elektro = elektro / celkem * 100) %>%
+        mutate(hybrid = hybrid / celkem * 100) %>%
+        mutate(ostatní = ostatní / celkem * 100) %>%
+        select(datum, hybrid, elektro, e85, lpg, cng, `ostatní`, diesel, benzin)
+
+trh <- trh %>%
+        gather(palivo, podil, benzin:hybrid)
+ggplot(trh, aes(x = datum, y = podil)) + geom_area(aes(colour = palivo, fill = palivo), position = 'stack') + scale_colour_brewer(type="qual", palette = 6) + scale_fill_brewer(type="qual", palette = 6) + xlab("") + ylab("podíl na trhu v procentech") + ggtitle("Podíl pohonů na trhu s novými auty (zdroj: SDA)")
+```
+
+## Detailní pohled na alternativní pohony
+
+Když se podíváme jen na alternativní pohony, vidíme akcelerovaný růst, zejména plynových a hybridních motorů. Naopak biolíh (e85) je na ústupu.
+
+```{r fig.width = 10, fig.height = 4, echo = F, message = F, warning= F}
+alternativni <- read.csv("../data/registrovana-vozidla.csv")
+alternativni <- alternativni %>%
+        mutate(datum = as.Date(paste(rok, mesic, "15", sep="-"))) %>%
+        select(datum, cng, lpg, e85, elektro, hybrid)
+alternativni <- alternativni %>%
+        gather(palivo, prodano, cng:hybrid)
+ggplot(alternativni, aes(x=datum, y=prodano, fill = palivo)) + geom_bar(stat = "identity") + xlab(label = "") + ylab(label = "prodaných kusů") + ggtitle("Nově registrovaná auta, jen alternativní paliva bez \"ostatních\" (zdroj: SDA)") + scale_fill_brewer(type="qual", palette = 6)
+```
