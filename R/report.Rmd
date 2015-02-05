@@ -2,7 +2,9 @@
 title: "Cena pohonných hmot a nově registrovaná auta podle typu paliva"
 author: "petr.koci@samizdat.cz"
 date: "5. února 2015"
-output: html_document
+output:
+  html_document:
+    toc: yes
 ---
 
 ## Jak se vyvíjela cena benzinu a nafty
