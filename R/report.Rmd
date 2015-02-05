@@ -43,7 +43,7 @@ vozidla <- vozidla %>%
         select(datum, benzin, diesel, cng, lpg, e85, elektro, hybrid, ostatní)
 vozidla <- vozidla %>%
         gather(palivo, prodano, benzin:ostatní)
-ggplot(vozidla, aes(x=datum, y=prodano)) + geom_line(aes(colour=palivo)) + xlab(label = "") + ylab(label = "prodaných kusů") + ggtitle("Nově registrovaná auta podle paliva (zdroj: SDA)") + scale_colour_brewer(type="qual", palette = 6)
+ggplot(vozidla, aes(x=datum, y=prodano)) + geom_line(aes(colour=palivo)) + xlab(label = "") + ylab(label = "prodaných kusů za měsíc") + ggtitle("Nově registrovaná auta podle paliva (zdroj: SDA)") + scale_colour_brewer(type="qual", palette = 6)
 ```
 
 ## Rozdělení trhu s novými auty
@@ -88,5 +88,5 @@ alternativni <- alternativni %>%
         select(datum, cng, lpg, e85, elektro, hybrid)
 alternativni <- alternativni %>%
         gather(palivo, prodano, cng:hybrid)
-ggplot(alternativni, aes(x=datum, y=prodano, fill = palivo)) + geom_bar(stat = "identity") + xlab(label = "") + ylab(label = "prodaných kusů") + ggtitle("Nově registrovaná auta, jen alternativní paliva bez \"ostatních\" (zdroj: SDA)") + scale_fill_brewer(type="qual", palette = 6)
+ggplot(alternativni, aes(x=datum, y=prodano, fill = palivo)) + geom_bar(stat = "identity") + xlab(label = "") + ylab(label = "prodaných kusů za měsíc") + ggtitle("Nově registrovaná auta, jen alternativní paliva bez \"ostatních\" (zdroj: SDA)") + scale_fill_brewer(type="qual", palette = 6)
 ```
