@@ -16,6 +16,19 @@ for {palivo, datum, prodano} in d3.csv.parse ig.data.paliva
   paliva[palivo].push count
   if palivo is \cng
     months.push datum
+hide = if window.location.hash
+  toShow = that.slice 1 .split ','
+  toHide = for palivo, [id] of paliva
+    if palivo not in toShow
+      id
+    else
+      null
+  toHide.filter -> it isnt null
+
+else
+  void
+
+console.log hide
 
 c3.generate do
   bindto: \#chart
@@ -23,6 +36,7 @@ c3.generate do
     columns: paliva['lpg','cng','e85','elektro','hybrid']
     type: \bar
     groups: [["CNG", "LPG", "E85", "Elektromobily", "Hybridní pohon"]]
+    hide: hide
   axis:
     x:
       tick:
