@@ -9,11 +9,11 @@ externalScripts =
   ...
 
 externalStyles =
-  # \https://samizdat.cz/tools/tooltip/v1.1.4.css
+  \https://samizdat.cz/tools/c3/0.5.x.min.css
   ...
 
-externalData = {}
-  # "obce": "#__dirname/data/obce.json"
+externalData =
+  "paliva": "#__dirname/data/alternativni.csv"
 
 preferScripts = <[ postInit.js _loadData.js ../data.js init.js _loadExternal.js]>
 deferScripts = <[ kandidatka.js base.js ]>
