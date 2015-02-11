@@ -12,9 +12,10 @@ ig.doCeny = ->
       ..setDate d
     row.time = row.date.getTime!
     row
-
-  width = 610
-  height = 600
+  container = container.append \div
+    ..attr \class \ceny
+  width = container.node!.clientWidth - 10
+  height = container.node!.clientHeight - 10
   margin = top:0 right:19 bottom:20 left:50
 
   svg = container.append \svg
