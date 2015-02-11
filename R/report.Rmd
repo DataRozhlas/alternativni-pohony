@@ -15,6 +15,8 @@ library("ggplot2")
 library("dplyr")
 library("XML")
 library("tidyr")
+library("knitr")
+library("xtable")
 
 ccs <- readHTMLTable("../data/ccs.html")[[1]]
 ccs <- ccs[ , c(1, 2, 4)]
@@ -48,7 +50,7 @@ ggplot(vozidla, aes(x=datum, y=prodano)) + geom_line(aes(colour=palivo)) + xlab(
 
 ## Rozdělení trhu s novými auty
 
-Diesely se dotáhly na benzinová auta, ale jak je vidět z předchozího grafu, v měsíčních prodejích je ještě nikdy nepřekonaly. Alternativní pohony tvoří méně než pět procent trhu. Nevíme, jaké pohony se skrývají v kategorii "ostatní", která za posledních osm let výrazně ztrácí.
+Diesely se dotáhly na benzinová auta, ale jak je vidět z předchozího grafu, v měsíčních prodejích je ještě nikdy nepřekonaly. Alternativní pohony tvoří méně než dvě procenta trhu.
 
 ```{r fig.width = 10, fig.height = 8, echo = F, message = F, warning= F}
 trh <- read.csv("../data/registrovana-vozidla.csv")
@@ -77,6 +79,58 @@ trh <- trh %>%
 ggplot(trh, aes(x = datum, y = podil)) + geom_area(aes(colour = palivo, fill = palivo), position = 'stack') + scale_colour_brewer(type="qual", palette = 6) + scale_fill_brewer(type="qual", palette = 6) + xlab("") + ylab("podíl na trhu v procentech") + ggtitle("Podíl pohonů na trhu s novými auty (zdroj: SDA)")
 ```
 
+Jak jsme se dozvěděli od SDA, kategorie "ostatní" znamená spíš "nezjištěno". Můžeme tedy předpokládat, že pohony v ní jsou rozdělené přibližně stejně jako na celém trhu a z grafu ji odstranit:
+
+```{r fig.width = 10, fig.height = 8, echo = F, message = F, warning= F}
+trh <- read.csv("../data/registrovana-vozidla.csv")
+trh <- trh %>%
+        mutate(datum = as.Date(paste(rok, mesic, "15", sep="-"))) %>%
+        select(datum, benzin, diesel, cng, lpg, e85, elektro, hybrid)
+
+trh[is.na(as.matrix(trh))] <- 0
+
+options(scipen = 999)
+
+trh <- trh %>%
+        mutate(celkem = benzin + diesel + cng + lpg + e85 + elektro + hybrid) %>%
+        mutate(benzin = benzin / celkem * 100) %>%
+        mutate(diesel = diesel / celkem * 100) %>%
+        mutate(cng = cng / celkem * 100) %>%
+        mutate(lpg = lpg / celkem * 100) %>%
+        mutate(e85 = e85 / celkem * 100) %>%
+        mutate(elektro = elektro / celkem * 100) %>%
+        mutate(hybrid = hybrid / celkem * 100) %>%
+        select(datum, hybrid, elektro, e85, lpg, cng, diesel, benzin)
+
+trh <- trh %>%
+        gather(palivo, podil, benzin:hybrid)
+ggplot(trh, aes(x = datum, y = podil)) + geom_area(aes(colour = palivo, fill = palivo), position = 'stack') + scale_colour_brewer(type="qual", palette = 6) + scale_fill_brewer(type="qual", palette = 6) + xlab("") + ylab("podíl na trhu v procentech") + ggtitle("Podíl pohonů na trhu s novými auty (zdroj: SDA)")
+```
+
+
+## Prodané kusy aut po letech 
+
+```{r fig.width = 10, fig.height = 2, echo = F, message = F, warning= F}
+vozidla <- read.csv("../data/registrovana-vozidla.csv")
+vozidla <- vozidla %>% 
+        group_by(rok) %>% 
+        summarise(benzin = sum(benzin, na.rm=T), diesel = sum(diesel, na.rm=T), cng = sum(cng, na.rm=T), lpg = sum(lpg, na.rm=T), e85 = sum(e85, na.rm=T), elektro = sum(elektro, na.rm=T), hybrid = sum(hybrid, na.rm=T), ostatní = sum(ostatní, na.rm=T)) %>%
+        mutate(celkem = (benzin + diesel + cng + lpg + e85 + elektro + hybrid + ostatní))
+kable(vozidla, caption = "Nově registrovaná auta podle pohonu")
+```
+
+```{r fig.width = 10, fig.height = 3, echo = F, message = F, warning= F}
+vozidla <- vozidla %>%
+        mutate(alternativní = cng + lpg + e85 + elektro + hybrid) %>% 
+        select(rok, benzin, diesel, alternativní) %>% 
+        gather(palivo, prodano, benzin:alternativní)
+vozidla <- vozidla %>% 
+        mutate(rok = as.Date(paste0(rok, "-01-01")))
+options(scipen=999)
+
+ggplot(data = vozidla, aes(x = rok, y = prodano)) + geom_bar(aes(fill = palivo), stat = "identity") + facet_wrap( ~ palivo, 1) + scale_fill_brewer(type="qual", palette = 6) + ggtitle("Jak se vyvíjel počet nově registrovaných aut po letech (zdroj: SDA)")
+```
+
 ## Detailní pohled na alternativní pohony
 
 Když se podíváme jen na alternativní pohony, vidíme akcelerovaný růst, zejména plynových a hybridních motorů. Naopak biolíh (e85) je na ústupu.
@@ -90,3 +144,18 @@ alternativni <- alternativni %>%
         gather(palivo, prodano, cng:hybrid)
 ggplot(alternativni, aes(x=datum, y=prodano, fill = palivo)) + geom_bar(stat = "identity") + xlab(label = "") + ylab(label = "prodaných kusů za měsíc") + ggtitle("Nově registrovaná auta, jen alternativní paliva bez \"ostatních\" (zdroj: SDA)") + scale_fill_brewer(type="qual", palette = 6)
 ```
+
+## Detailní pohled na alternativní pohony - interaktivní verze
+Při najetí myši nad sloupeček se zobrazí podrobnosti. Kliknutím na název kategorie pod grafem si můžete přidávat, ubírat a porovnávat různá paliva.  
+
+```{r, echo=FALSE, results='asis'}
+cat('<iframe src="https://samizdat.cz/data/diesely/www/#e85,cng,lpg" width=910 height=320 frameborder=0 scrolling="no"></iframe>')
+```
+
+Na vlastní web si můžete graf vložit pomocí následujícího kódu.
+
+```
+<iframe src="https://samizdat.cz/data/diesely/www/#e85,cng,lpg" width=610 height=320 frameborder=0 scrolling="no"></iframe>
+```
+
+V první části si můžete nastavit, která paliva se zobrazí při prvním načtení grafu. Pokud tedy píšete článek o e85 a chcete ukázat především prodeje těchto aut, smažete ",cng,lpg" a první parametr bude jen src="https://samizdat.cz/data/diesely/www/#e85".
