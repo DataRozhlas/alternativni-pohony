@@ -1,3 +1,4 @@
+mesice = <[leden únor březen duben květen červen červenec srpen září říjen listopad prosinec]>
 ig.doCeny = ->
   container = d3.select ig.containers.base
   data = d3.csv.parse ig.data.ceny, (row) ->
@@ -9,6 +10,7 @@ ig.doCeny = ->
       ..setFullYear y
       ..setMonth m - 1
       ..setDate d
+    row.time = row.date.getTime!
     row
 
   width = 610
@@ -72,3 +74,20 @@ ig.doCeny = ->
     ..attr \class "axis y"
     ..attr \transform "translate(#{margin.left}, #{margin.top})"
     ..call yAxis
+  tipArea = container.append \div
+    ..attr \class \tip-area
+
+  svg.on \mousemove ->
+    x = d3.event.x - margin.left
+    date = xScale.invert x
+    time = date.getTime!
+    diff = Infinity
+    for datum in data
+      d = Math.abs datum.time - time
+      if diff > d
+        diff = d
+      else
+        break
+    {date, diesel, benzin} = datum
+    date = "#{date.getDate!}. #{mesice[date.getMonth!]} #{date.getFullYear!}"
+    tipArea.html "<b>#{date}</b><br> <span class='benzin'>Benzin: <b>#{ig.utils.formatNumber benzin, 2} Kč</b></span><span class='diesel'>Nafta: <b>#{ig.utils.formatNumber diesel, 2} Kč</b></span>"
