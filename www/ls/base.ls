@@ -9,9 +9,12 @@ paliva = {
   e85: ["E85"]
   elektro: ["Elektromobily"]
   hybrid: ["Hybridní pohon"]
+  benzin: ["Benzín"]
+  diesel: ["Nafta"]
 }
 months = []
 for {palivo, datum, prodano} in d3.csv.parse ig.data.paliva
+  continue if palivo is \ostatní
   count = (parseInt prodano, 10) || 0
   paliva[palivo].push count
   if palivo is \cng
@@ -26,16 +29,15 @@ hide = if window.location.hash
   toHide.filter -> it isnt null
 
 else
-  void
+  ["Benzín", "Nafta"]
 
-console.log hide
 
 c3.generate do
   bindto: \#chart
   data:
-    columns: paliva['lpg','cng','e85','elektro','hybrid']
+    columns: paliva['lpg','cng','e85','elektro','hybrid','benzin','diesel']
     type: \bar
-    groups: [["CNG", "LPG", "E85", "Elektromobily", "Hybridní pohon"]]
+    groups: [["CNG", "LPG", "E85", "Elektromobily", "Hybridní pohon", "Benzín", "Nafta"]]
     hide: hide
   axis:
     x:
