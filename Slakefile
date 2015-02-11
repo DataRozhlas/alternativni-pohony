@@ -19,13 +19,13 @@ externalData =
 preferScripts = <[ postInit.js _loadData.js ../data.js init.js _loadExternal.js]>
 deferScripts = <[ Graph.js base.js ]>
 develOnlyScripts = <[ _loadData.js _loadExternal.js]>
-gzippable = <[ www/index.html.deploy www/script.js.deploy ]>
+gzippable = <[ www/index.deploy.html www/script.deploy.js ]>
 safe-deployable =
-  "www/index.html"
-  "www/script.js"
-  "www/index.html.gz"
-  "www/script.js.gz"
-  "www/screen.css"
+  "www/index.deploy.html"
+  "www/script.deploy.js"
+  "www/index.deploy.html.gz"
+  "www/script.deploy.js.gz"
+  "www/screen.deploy.css"
 
 build-styles = (options = {}, cb) ->
   require! cssmin
@@ -33,7 +33,7 @@ build-styles = (options = {}, cb) ->
     * (cb) -> fs.readFile "#__dirname/www/external.css", cb
       (cb) -> prepare-stylus \screen, options, cb
   out = cssmin external + "\n\n\n" + local
-  filename = if options.deploy then "screen.css.deploy" else "screen.css"
+  filename = if options.deploy then "screen.deploy.css" else "screen.css"
   <~ fs.writeFile "#__dirname/www/#filename", out
   cb?!
 
@@ -136,7 +136,7 @@ combine-scripts = (options = {}, cb) ->
     external = fs.readFileSync "#__dirname/www/external.js"
     code = external + "\n;\n" + code
   if options.deploy
-    fs.writeFileSync "#__dirname/www/script.js.deploy", code
+    fs.writeFileSync "#__dirname/www/script.deploy.js", code
   else
     fs.writeFileSync "#__dirname/www/script.js", code
   console.log "Scripts combined"
@@ -193,8 +193,8 @@ deploy-files = (cb) ->
   console.log "Deploying files..."
   <~ async.each safe-deployable, (file, cb) ->
     fs.rename do
-      "#__dirname/#{file}.deploy"
       "#__dirname/#file"
+      "#__dirname/#{file.replace '.deploy' ''}"
       cb
   cb?!
 
@@ -203,8 +203,8 @@ inject-index = (cb) ->
   require! htmlmin: 'html-minifier'
   files =
     "#__dirname/www/_index.html"
-    "#__dirname/www/script.js.deploy"
-    "#__dirname/www/screen.css.deploy"
+    "#__dirname/www/script.deploy.js"
+    "#__dirname/www/screen.deploy.css"
   (err, [index, script, style]) <~ async.map files, fs.readFile
   console.log err if err
   index .= toString!
@@ -219,7 +219,7 @@ inject-index = (cb) ->
     minifyJS: 1
     minifyCSS: 1
   index = htmlmin.minify index, htmlminConfig
-  <~ fs.writeFile "#__dirname/www/index.html.deploy", index
+  <~ fs.writeFile "#__dirname/www/index.deploy.html", index
   cb?!
 
 task \build ->
