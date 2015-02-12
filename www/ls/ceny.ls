@@ -92,3 +92,26 @@ ig.doCeny = ->
     {date, diesel, benzin} = datum
     date = "#{date.getDate!}. #{mesice[date.getMonth!]} #{date.getFullYear!}"
     tipArea.html "<b>#{date}</b><br> <span class='benzin'>Benzin: <b>#{ig.utils.formatNumber benzin, 2} Kč</b></span><span class='diesel'>Nafta: <b>#{ig.utils.formatNumber diesel, 2} Kč</b></span>"
+    moveLine datum
+
+  line = drawing.append \g
+    ..attr \transform "translate(-200,0)"
+    ..attr \class \highlight-line
+    ..append \line
+      ..attr \x1 0
+      ..attr \y1 0
+      ..attr \x2 0
+      ..attr \y2 height
+  dieselLinePoint = line.append \circle
+    ..attr \class \diesel
+    ..attr \r 3
+  benzinLinePoint = line.append \circle
+    ..attr \class \benzin
+    ..attr \r 3
+  moveLine = (datum) ->
+    x = Math.round xScale datum.date
+    if x < 0 or x > width
+      x = -200
+    line.attr \transform "translate(#x,0)"
+    dieselLinePoint.attr \cy yScale datum.diesel
+    benzinLinePoint.attr \cy yScale datum.benzin
