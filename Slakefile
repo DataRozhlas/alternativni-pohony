@@ -14,18 +14,27 @@ externalStyles =
 
 externalData =
   "paliva": "#__dirname/data/vozidla.csv"
+  "ceny": "#__dirname/data/ceny.csv"
 
 preferScripts = <[ postInit.js _loadData.js ../data.js init.js _loadExternal.js]>
-deferScripts = <[ kandidatka.js base.js ]>
+deferScripts = <[ Graph.js base.js ]>
 develOnlyScripts = <[ _loadData.js _loadExternal.js]>
-gzippable = <[ www/index.html www/script.js ]>
+gzippable = <[ www/index.deploy.html www/script.deploy.js ]>
+safe-deployable =
+  "www/index.deploy.html"
+  "www/script.deploy.js"
+  "www/index.deploy.html.gz"
+  "www/script.deploy.js.gz"
+  "www/screen.deploy.css"
+
 build-styles = (options = {}, cb) ->
   require! cssmin
   (err, [external, local]) <~ async.parallel do
     * (cb) -> fs.readFile "#__dirname/www/external.css", cb
       (cb) -> prepare-stylus \screen, options, cb
   out = cssmin external + "\n\n\n" + local
-  <~ fs.writeFile "#__dirname/www/screen.css", out
+  filename = if options.deploy then "screen.deploy.css" else "screen.css"
+  <~ fs.writeFile "#__dirname/www/#filename", out
   cb?!
 
 prepare-stylus = (file, options, cb) ->
@@ -126,8 +135,10 @@ combine-scripts = (options = {}, cb) ->
   else
     external = fs.readFileSync "#__dirname/www/external.js"
     code = external + "\n;\n" + code
-
-  fs.writeFileSync "#__dirname/www/script.js", code
+  if options.deploy
+    fs.writeFileSync "#__dirname/www/script.deploy.js", code
+  else
+    fs.writeFileSync "#__dirname/www/script.js", code
   console.log "Scripts combined"
   cb? err
 
@@ -178,14 +189,24 @@ copy-index = ->
   fs.createReadStream "#__dirname/www/_index.html" .pipe do
     fs.createWriteStream "#__dirname/www/index.html"
 
+deploy-files = (cb) ->
+  console.log "Deploying files..."
+  <~ async.each safe-deployable, (file, cb) ->
+    fs.rename do
+      "#__dirname/#file"
+      "#__dirname/#{file.replace '.deploy' ''}"
+      cb
+  cb?!
+
 inject-index = (cb) ->
   require! child_process.exec
   require! htmlmin: 'html-minifier'
   files =
     "#__dirname/www/_index.html"
-    "#__dirname/www/script.js"
-    "#__dirname/www/screen.css"
+    "#__dirname/www/script.deploy.js"
+    "#__dirname/www/screen.deploy.css"
   (err, [index, script, style]) <~ async.map files, fs.readFile
+  console.log err if err
   index .= toString!
   index .= replace '<script src="script.js" charset="utf-8" async></script>', "<script>#{script.toString!}</script>"
   index .= replace '<link rel="stylesheet" href="screen.css">', "<style>#{style.toString!}</style>"
@@ -198,7 +219,7 @@ inject-index = (cb) ->
     minifyJS: 1
     minifyCSS: 1
   index = htmlmin.minify index, htmlminConfig
-  <~ fs.writeFile "#__dirname/www/index.html", index
+  <~ fs.writeFile "#__dirname/www/index.deploy.html", index
   cb?!
 
 task \build ->
@@ -216,11 +237,12 @@ task \deploy ->
       download-external-styles
       # build-all-server-scripts!
       # refresh-manifest!
-  <~ build-styles compression: yes
+  <~ build-styles compression: yes deploy: yes
   <~ build-all-scripts
-  <~ combine-scripts compression: yes
+  <~ combine-scripts compression: yes deploy: yes
   <~ inject-index!
   <~ gzip-files!
+  <~ deploy-files!
 
 task \build-styles ->
   copy-index!
