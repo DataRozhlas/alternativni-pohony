@@ -32,6 +32,28 @@ ccs <- ccs %>%
 ggplot(ccs, aes(x=datum, y=cena)) + geom_line(aes(colour=palivo)) + xlab(label = "") + ylab(label = "cena v korunách za litr") + ggtitle("Průměrná cena pohonných hmot (zdroj: CCS)") + scale_colour_brewer(type="qual", palette = 6)
 ```
 
+## Jak se vyvíjela cena benzinu a nafty - interaktivní verze
+```{r, echo=FALSE, results='asis'}
+cat('<iframe src = "https://samizdat.cz/data/diesely/www/#ceny" width = "910" height = "320" frameborder = "0" scrollling = "0"></iframe> 
+')
+```
+
+Na vlastní web si můžete graf vložit pomocí následujícího kódu.
+```
+<iframe src = "https://samizdat.cz/data/diesely/www/#ceny" width = "610" height = "240" frameborder = "0" scrollling = "0"></iframe>  
+```
+
+## Kolik pohonných hmot jste si mohli koupit za průměrný plat - interaktivní verze
+```{r, echo=FALSE, results='asis'}
+cat('<iframe src = "https://samizdat.cz/data/diesely/www/#prummzda" width = "910" height = "320" frameborder = "0" scrollling = "0"></iframe> 
+')
+```
+
+Na vlastní web si můžete graf vložit pomocí následujícího kódu.
+```
+<iframe src = "https://samizdat.cz/data/diesely/www/#prummzda" width = "610" height = "240" frameborder = "0" scrollling = "0"></iframe>  
+```
+
 ## Nově registrovaná auta podle pohonu
 
 Údaje o nově registrovaných osobních autech máme od [Svazu dovozců automobilů](http://portal.sda-cia.cz/stat.php?n#str=nova). Zahrnují i tuzemské výrobce a jiné nečleny, měly by odrážet celkovou situaci na trhu.
@@ -119,7 +141,7 @@ vozidla <- vozidla %>%
 kable(vozidla, caption = "Nově registrovaná auta podle pohonu")
 ```
 
-```{r fig.width = 10, fig.height = 3, echo = F, message = F, warning= F}
+```{r fig.width = 10, fig.height = 3.5, echo = F, message = F, warning= F}
 vozidla <- vozidla %>%
         mutate(alternativní = cng + lpg + e85 + elektro + hybrid) %>% 
         select(rok, benzin, diesel, alternativní) %>% 
@@ -128,7 +150,7 @@ vozidla <- vozidla %>%
         mutate(rok = as.Date(paste0(rok, "-01-01")))
 options(scipen=999)
 
-ggplot(data = vozidla, aes(x = rok, y = prodano)) + geom_bar(aes(fill = palivo), stat = "identity") + facet_wrap( ~ palivo, 1) + scale_fill_brewer(type="qual", palette = 6) + ggtitle("Jak se vyvíjel počet nově registrovaných aut po letech (zdroj: SDA)")
+ggplot(data = vozidla, aes(x = rok, y = prodano)) + geom_bar(aes(fill = palivo), stat = "identity") + geom_text(aes(x = rok, y = prodano, label = prodano), hjust = - 0.05, colour = "black", size = 3, angle = 90) + ylim(0, 125000) + facet_wrap( ~ palivo, 1) + scale_fill_brewer(type="qual", palette = 6) + ggtitle("Jak se vyvíjel počet nově registrovaných aut po letech (zdroj: SDA)")
 ```
 
 ## Detailní pohled na alternativní pohony
@@ -149,13 +171,26 @@ ggplot(alternativni, aes(x=datum, y=prodano, fill = palivo)) + geom_bar(stat = "
 Při najetí myši nad sloupeček se zobrazí podrobnosti. Kliknutím na název kategorie pod grafem si můžete přidávat, ubírat a porovnávat různá paliva.  
 
 ```{r, echo=FALSE, results='asis'}
-cat('<iframe src="https://samizdat.cz/data/diesely/www/#e85,cng,lpg" width=910 height=320 frameborder=0 scrolling="no"></iframe>')
+cat('<iframe src = "https://samizdat.cz/data/diesely/www/#e85,cng,lpg" width = "910" height = "320" frameborder = "0" scrolling = "no"></iframe>')
 ```
 
 Na vlastní web si můžete graf vložit pomocí následujícího kódu.
 
 ```
-<iframe src="https://samizdat.cz/data/diesely/www/#e85,cng,lpg" width=610 height=320 frameborder=0 scrolling="no"></iframe>
+<iframe src = "https://samizdat.cz/data/diesely/www/#e85,cng,lpg" width = "610" height = "320" frameborder = "0" scrolling = "no"></iframe>
 ```
 
 V první části si můžete nastavit, která paliva se zobrazí při prvním načtení grafu. Pokud tedy píšete článek o e85 a chcete ukázat především prodeje těchto aut, smažete ",cng,lpg" a první parametr bude jen src="https://samizdat.cz/data/diesely/www/#e85".
+
+## Jak přibývalo řepky olejky
+
+Může to být zajímavé hlavně v souvislosti s dotacemi na bioethanol.
+
+```{r fig.width = 10, fig.height = 3, echo = F, message = F, warning= F}
+repka <- data.frame(
+        rok = factor(1989:2014),
+        plocha = c(102, 105, 128, 136, 167, 191, 252, 229, 230, 266, 350, 325, 344, 313, 251, 259, 267, 292, 338, 357, 355, 369, 373, 401, 419, 389)
+)
+ggplot(repka, aes(x=rok, y=plocha)) + geom_bar(stat = "identity", fill = "#e41a1c") + geom_text(aes(label = plocha), vjust = 1.5, colour = "white", size = 3) + xlab(label = "") + ylab(label = "tisíce hektarů") + ggtitle("Osevní plocha řepky olejky (zdroj: ČSÚ)")
+```
+
